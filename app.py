@@ -1,42 +1,62 @@
-import streamlit as st
+import streamlit as str
 import pandas as pd
-from datetime import datetime
+import datetime
 import os
 
-st.set_page_config(page_title="Журнал учета времени", layout="centered")
-st.title("🕒 Журнал учета рабочего времени")
+# Настройка названия страницы
+str.set_page_config(page_title="Журнал учета заказов", layout="wide")
+str.title("📋 Общий журнал учета работы")
 
-EMPLOYEES = ["Сотрудник 1", "Сотрудник 2", "Сотрудник 3", "Сотрудник 4", "Сотрудник 5"]
-DB_FILE = "attendance_log.csv"
+# Файл для хранения общей базы данных
+DB_FILE = "journal_data.csv"
 
+# Загрузка существующих данных
 if os.path.exists(DB_FILE):
     df = pd.read_csv(DB_FILE)
 else:
-    df = pd.DataFrame(columns=["Сотрудник", "Дата", "Статус", "Время"])
+    df = pd.DataFrame(columns=["Учетное время", "Сотрудник / Заказ", "Этап работы"])
 
-st.write("### Отметить сотрудника:")
-selected_emp = st.selectbox("Выберите сотрудника:", EMPLOYEES)
+# --- ФОРМА ВВОДА ---
+str.subheader("➕ Добавить новую отметку")
 
-col1, col2 = st.columns(2)
-with col1:
-    if st.button("🟢 ПРИШЕЛ", use_container_width=True):
-        now = datetime.now()
-        new_row = {"Сотрудник": selected_emp, "Дата": now.strftime("%d.%m.%Y"), "Статус": "Приход", "Время": now.strftime("%H:%M:%S")}
-        df = pd.concat([pd.DataFrame([new_row]), df], ignore_index=True)
-        df.to_csv(DB_FILE, index=False)
-        st.success(f"✅ {selected_emp} отмечен: Приход в {new_row['Время']}")
+with str.form("journal_form", clear_on_submit=True):
+    col1, col2 = str.columns(2)
+    
+    with col1:
+        name = str.text_input("Введите имя сотрудника или номер заказа:")
+    
+    with col2:
+        status = str.selectbox(
+            "Выберите этап работы:",
+            [
+                "📥 Жумыс келди (Работа поступила)",
+                "⚙️ Жумыс стелип жатыр (В процессе)",
+                "🪡 Примерка",
+                "✅ Сдача"
+            ]
+        )
+    
+    submit = str.form_submit_button("Сохранить в общий журнал")
 
-with col2:
-    if st.button("🔴 УШЕЛ", use_container_width=True):
-        now = datetime.now()
-        new_row = {"Сотрудник": selected_emp, "Дата": now.strftime("%d.%m.%Y"), "Статус": "Уход", "Время": now.strftime("%H:%M:%S")}
-        df = pd.concat([pd.DataFrame([new_row]), df], ignore_index=True)
-        df.to_csv(DB_FILE, index=False)
-        st.error(f"❌ {selected_emp} отмечен: Уход в {new_row['Время']}")
+# Если кнопка нажата, записываем данные
+if submit and name:
+    # Берем текущее время (Казахстан / локальное)
+    current_time = datetime.datetime.now().strftime("%d.%m.%Y %H:%M")
+    
+    # Новая строчка
+    new_row = pd.DataFrame([[current_time, name, status]], columns=["Учетное время", "Сотрудник / Заказ", "Этап работы"])
+    
+    # Добавляем в общую таблицу
+    df = pd.concat([new_row, df], ignore_index=True)
+    df.to_csv(DB_FILE, index=False)
+    str.success("Данные успешно добавлены!")
+    str.rerun()
 
-st.write("---")
-st.write("### 📋 Длинный журнал посещаемости:")
+# --- ВЫВОД ОБЩЕЙ ТАБЛИЦЫ ---
+str.markdown("---")
+str.subheader("📖 Общая тетрадь (Все записи)")
+
 if not df.empty:
-    st.dataframe(df, use_container_width=True, height=400)
+    str.dataframe(df, use_container_width=True)
 else:
-    st.info("Журнал пока пуст.")
+    str.info("Журнал пока пуст. Добавьте первую запись выше.")
